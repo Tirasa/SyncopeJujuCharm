@@ -1,0 +1,27 @@
+#!/bin/bash
+set -e
+
+add-apt-repository -y ppa:natecarlson/maven3
+apt-get update
+apt-get install -y maven3
+juju-log "Maven 3 installed"
+
+BASE_SRC=/usr/local/src
+PROJECT_NAME=syncope-charm
+
+cd $BASE_SRC
+/usr/share/maven3/bin/mvn archetype:generate \
+    -DarchetypeGroupId=org.apache.syncope \
+    -DarchetypeArtifactId=syncope-archetype \
+    -DarchetypeRepository=http://repo1.maven.org/maven2 \
+    -DarchetypeVersion=1.1.5 \
+    -DgroupId=net.tirasa.syncope \
+    -DartifactId=$PROJECT_NAME \
+    -Dversion=1.0-SNAPSHOT \
+    -DsecretKey=1apache2syncope3tirasa \
+    -DinteractiveMode=false
+juju-log "Apache Syncope overlay project created under $BASE_SRC/$PROJECT_NAME"
+
+cd $PROJECT_NAME
+/usr/share/maven3/bin/mvn clean package
+juju-log "Apache Syncope overlay project successfully built"

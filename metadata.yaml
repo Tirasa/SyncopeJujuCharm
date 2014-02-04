@@ -1,0 +1,17 @@
+name: syncope
+summary: Open Source manager of digital identities in enterprise environments.
+maintainer: Syncope Tirasa support <syncope@tirasa.net>
+description: |
+  Apache Syncope is an Open Source system for managing digital identities in enterprise environments, implemented in JEE technology and released under Apache 2.0 license.
+
+  Identity management (or IdM) represents the joint result of business process and IT to manage user data on systems and applications. IdM involves considering user attributes, roles, resources and entitlements in trying to give a decent answer to the question bumping up every time in an IT administrator's mind:
+
+  Who has access to What, When, How, and Why?
+categories:
+  - applications
+subordinate: false
+provides:
+  syncope:
+    interface: http
+#requires:
+#peers:
