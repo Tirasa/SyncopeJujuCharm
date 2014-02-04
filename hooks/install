@@ -1,16 +1,15 @@
 #!/bin/bash
-set -e
+set -eu
+source inc/common
 
 add-apt-repository -y ppa:natecarlson/maven3
 apt-get update
 apt-get install -y maven3
 juju-log "Maven 3 installed"
 
-BASE_SRC=/usr/local/src
-PROJECT_NAME=syncope-charm
-
 cd $BASE_SRC
-/usr/share/maven3/bin/mvn archetype:generate \
+rm -rf $PROJECT_NAME
+$M2_HOME/bin/mvn archetype:generate \
     -DarchetypeGroupId=org.apache.syncope \
     -DarchetypeArtifactId=syncope-archetype \
     -DarchetypeRepository=http://repo1.maven.org/maven2 \
@@ -23,5 +22,5 @@ cd $BASE_SRC
 juju-log "Apache Syncope overlay project created under $BASE_SRC/$PROJECT_NAME"
 
 cd $PROJECT_NAME
-/usr/share/maven3/bin/mvn clean package
+#$M2_HOME/bin/mvn clean package
 juju-log "Apache Syncope overlay project successfully built"

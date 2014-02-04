@@ -1,0 +1,52 @@
+#!/bin/bash
+set -eu
+source inc/common
+
+juju-log "Apache Syncope got a db"
+
+database=`relation-get database`
+user=`relation-get user`
+password=`relation-get password`
+host=`relation-get private-address`
+
+if [ -z "$database" ] ; then
+        juju-log "No database information sent yet. Silently exiting"
+	exit 0
+fi
+
+cat > $BASE_SRC/$PROJECT_NAME/core/src/main/resources/persistence.properties <<EOF
+jpa.driverClassName=org.postgresql.Driver
+jpa.url=jdbc:postgresql://$host:5432/$database
+jpa.username=$user
+jpa.password=$password
+jpa.dialect=org.apache.openjpa.jdbc.sql.PostgresDictionary
+quartz.jobstore=org.quartz.impl.jdbcjobstore.PostgreSQLDelegate
+quartz.sql=tables_postgres.sql
+logback.sql=postgresql.sql
+
+EOF
+
+cat > $BASE_SRC/$PROJECT_NAME/core/src/main/resources/META-INF/context.xml <<EOF
+<?xml version='1.0' encoding='utf-8'?>
+<Context>
+  <!-- Disable session persistence across Tomcat restarts -->
+  <Manager pathname="" />
+
+  <Resource name="jdbc/syncopeDataSource" auth="Container" type="javax.sql.DataSource"
+          factory="org.apache.tomcat.jdbc.pool.DataSourceFactory" testWhileIdle="true"
+          testOnBorrow="true" testOnReturn="true" validationQuery="SELECT 1" validationInterval="30000"
+          maxActive="100" minIdle="2" maxWait="10000" initialSize="2" removeAbandonedTimeout="20000"
+          removeAbandoned="true" logAbandoned="true" suspectTimeout="20000"
+          timeBetweenEvictionRunsMillis="5000" minEvictableIdleTimeMillis="5000"
+          jdbcInterceptors="org.apache.tomcat.jdbc.pool.interceptor.ConnectionState;org.apache.tomcat.jdbc.pool.interceptor.StatementFinalizer"
+          username="$user" password="$password" driverClassName="org.postgresql.Driver"
+          url="jdbc:postgresql://$host:5432/$database"/>
+
+</Context>
+
+EOF
+
+sed 's/<!--<resource-ref>/<resource-ref>/' $BASE_SRC/$PROJECT_NAME/core/src/main/webapp/WEB-INF/web.xml | sed 's/<\/resource-ref>-->/<\/resource-ref>/' > /tmp/web.xml
+mv /tmp/web.xml $BASE_SRC/$PROJECT_NAME/core/src/main/webapp/WEB-INF/web.xml
+
+juju-log "Apache Syncope persistence successfully configured"
