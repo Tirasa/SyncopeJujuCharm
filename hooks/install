@@ -2,25 +2,113 @@
 set -eu
 source inc/common
 
+# 1. Generate and build Maven overlay project (if not already available)
+
 add-apt-repository -y ppa:natecarlson/maven3
 apt-get update
 apt-get install -y maven3
 juju-log "Maven 3 installed"
 
-cd $BASE_SRC
-rm -rf $PROJECT_NAME
-$M2_HOME/bin/mvn archetype:generate \
-    -DarchetypeGroupId=org.apache.syncope \
-    -DarchetypeArtifactId=syncope-archetype \
-    -DarchetypeRepository=http://repo1.maven.org/maven2 \
-    -DarchetypeVersion=1.1.5 \
-    -DgroupId=net.tirasa.syncope \
-    -DartifactId=$PROJECT_NAME \
-    -Dversion=1.0-SNAPSHOT \
-    -DsecretKey=1apache2syncope3tirasa \
-    -DinteractiveMode=false
-juju-log "Apache Syncope overlay project created under $BASE_SRC/$PROJECT_NAME"
+if [ ! -d "$BASE_SRC/$PROJECT_NAME" ]; then
+    cd $BASE_SRC
+    $M2_HOME/bin/mvn archetype:generate \
+	-DarchetypeGroupId=org.apache.syncope \
+	-DarchetypeArtifactId=syncope-archetype \
+	-DarchetypeRepository=http://repo1.maven.org/maven2 \
+	-DarchetypeVersion=1.1.5 \
+	-DgroupId=net.tirasa.syncope \
+	-DartifactId=$PROJECT_NAME \
+	-Dversion=1.0-SNAPSHOT \
+	-DsecretKey=1apache2syncope3tirasa \
+	-DinteractiveMode=false
+    juju-log "Apache Syncope overlay project created under $BASE_SRC/$PROJECT_NAME"
 
-cd $PROJECT_NAME
-#$M2_HOME/bin/mvn clean package
-juju-log "Apache Syncope overlay project successfully built"
+    cd $PROJECT_NAME
+    $M2_HOME/bin/mvn clean package
+    juju-log "Apache Syncope overlay project successfully built"
+else
+    juju-log "Apache Syncope overlay project already present"
+fi
+
+# 2. Download the configured JEE container and do some basic setup
+
+shopt -s nocasematch
+if [ "$JEE_CONTAINER" == "glassfish" ]; then 
+    juju-log "Go for Glassfish"
+else
+    if [ "$JEE_CONTAINER" == "jboss" ]; then
+	juju-log "Go for JBoss"
+    else
+	TOMCAT_VERSION="7.0.50"
+	juju-log "Go for Tomcat $TOMCAT_VERSION under $TOMCAT_HOME"
+	
+	if [ ! -d $TOMCAT_HOME ]; then
+	    juju-log "Downloading Tomcat $TOMCAT_VERSION..."
+
+	    cd /tmp
+	    wget_output=$(wget -qN http://archive.apache.org/dist/tomcat/tomcat-7/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz)
+	    if [ $? -ne 0 ]; then
+		juju-log "Cannot download Tomcat $TOMCAT_VERSION: aborting"
+		exit $?
+	    fi
+
+	    cd /opt
+	    tar xvzf /tmp/apache-tomcat-$TOMCAT_VERSION.tar.gz
+	    ln -s apache-tomcat-$TOMCAT_VERSION apache-tomcat
+
+	    cp $TOMCAT_HOME/conf/server.xml $TOMCAT_HOME/conf/server.xml.orig
+	    sed -i "s/8080/$HTTP_PORT/g" $TOMCAT_HOME/conf/server.xml
+
+	    cat > $TOMCAT_HOME/bin/setenv.sh <<EOF
+JAVA_OPTS="-Djava.awt.headless=true -Dfile.encoding=UTF-8 
+-server -Xms1536m -Xmx1536m
+-XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC
+-XX:NewSize=256m -XX:MaxNewSize=256m -XX:PermSize=256m 
+-XX:MaxPermSize=512m -XX:+DisableExplicitGC"
+
+EOF
+	    chmod 755 $TOMCAT_HOME/bin/setenv.sh
+	    
+	    cat > /etc/init.d/apache-tomcat <<EOF
+### BEGIN INIT INFO
+# Provides:          apache-tomcat
+# Required-Start:    \$local_fs \$remote_fs \$network
+# Required-Stop:     \$local_fs \$remote_fs \$network
+# Should-Start:      \$named
+# Should-Stop:       \$named
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start Tomcat.
+# Description:       Start the Tomcat servlet engine.
+### END INIT INFO
+
+case \$1 in
+
+start)
+  sh $TOMCAT_HOME/bin/startup.sh
+  ;;
+
+stop)
+  sh $TOMCAT_HOME/bin/shutdown.sh
+  ;;
+
+restart)
+  sh $TOMCAT_HOME/bin/shutdown.sh
+  sh $TOMCAT_HOME/bin/startup.sh
+  ;;
+esac
+
+exit
+
+EOF
+	    chmod 755 /etc/init.d/apache-tomcat
+	    update-rc.d apache-tomcat defaults
+	else
+	    juju-log "Tomcat already set up under $TOMCAT_HOME"
+	fi
+    fi
+fi
+shopt -u nocasematch
+
+# Make it publicly visible, once the syncope service is exposed
+open-port $HTTP_PORT/tcp

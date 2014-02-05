@@ -8,11 +8,29 @@ This charm provides [Apache Syncope](http://syncope.apache.org).
 
 Step by step instructions on using the charm:
 
-    juju deploy syncope
-    juju deploy postgresql
-    juju deploy tomcat7
-    juju add-relation syncope postgresql
-    juju add-relation syncope tomcat7
+```
+$ juju deploy syncope
+```
+
+then
+
+```
+$ juju deploy postgresql
+$ juju add-relation syncope postgresql:db
+```
+
+or
+
+```
+$ juju deploy mysql
+$ juju add-relation syncope mysql
+```
+
+and finally
+
+```
+$ juju expose syncope
+```
 
 ## Scale out Usage
 

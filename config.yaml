@@ -1,14 +1,17 @@
 options:
-  string-option:
+  jee-container:
     type: string
-    default: "Default Value"
-    description: "A short description of the configuration option"
-  boolean-option:
-    type: boolean
-    default: False
-    description: "A short description of the configuration option"
-  int-option:
+    default: "tomcat"
+    description: "Choose the JEE container; valid values: tomcat, glassfish, jboss"
+  http-port:
     type: int
-    default: 9001
-    description: "A short description of the configuration option"
-
+    default: 80
+    description: "HTTP listen port for chosen JEE container"
+  bundles-dir:
+    type: string
+    default: "/opt/syncope/bundles"
+    description: "ConnId bundles directory"
+  log-dir:
+    type: string
+    default: "/opt/syncope/log"
+    description: "Syncope log directory"
