@@ -1,0 +1,10 @@
+JEE_CONTAINER=`config-get jee-container`
+HTTP_PORT=`config-get http-port`
+SYNCOPE_BUNDLES_DIR=`config-get bundles-dir`
+SYNCOPE_LOG_DIR=`config-get log-dir`
+
+TOMCAT_HOME=/opt/apache-tomcat
+
+BASE_SRC=/usr/local/src
+PROJECT_NAME=syncope-charm
+M2_HOME=/usr/share/maven3

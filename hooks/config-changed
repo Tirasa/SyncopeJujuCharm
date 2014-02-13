@@ -1,0 +1,9 @@
+#!/bin/bash
+set -eu
+source inc/common
+
+# TODO:
+# 1. download and install new JEE container
+# 2. reconfigure Maven project sources for it
+# 3. rebuild
+# 4. redeploy

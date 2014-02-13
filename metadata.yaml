@@ -1,0 +1,16 @@
+name: syncope
+summary: Open Source manager of digital identities in enterprise environments.
+maintainer: Syncope Tirasa support <syncope@tirasa.net>
+description: |
+  Apache Syncope is an Open Source system for managing digital identities in enterprise environments, implemented in JEE technology and released under Apache 2.0 license.
+
+  This will install and setup Apache Syncope optimized to run in the cloud. By default it will require PostgreSQL and Apache Tomcat 7.
+categories:
+  - applications
+subordinate: false
+provides:
+  website:
+    interface: http
+requires:
+  db:
+    interface: pgsql

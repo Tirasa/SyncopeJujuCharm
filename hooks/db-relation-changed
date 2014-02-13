@@ -1,0 +1,91 @@
+#!/bin/bash
+set -eu
+source inc/common
+
+juju-log "Apache Syncope got a db"
+
+database=`relation-get database`
+user=`relation-get user`
+password=`relation-get password`
+host=`relation-get private-address`
+
+if [ -z "$database" ] ; then
+        juju-log "No database information sent yet. Silently exiting"
+	exit 0
+fi
+
+# 1. Complete JEE container configuration
+
+shopt -s nocasematch
+if [ "$JEE_CONTAINER" == "glassfish" ]; then 
+    juju-log "Completing Glassfish configuration"
+else
+    if [ "$JEE_CONTAINER" == "jboss" ]; then
+	juju-log "Completing JBoss configuration"
+    else
+	juju-log "Completing Tomcat configuration"
+
+	cat > $TOMCAT_HOME/conf/context.xml <<EOF
+<?xml version='1.0' encoding='utf-8'?>
+<Context>
+  <!-- Disable session persistence across Tomcat restarts -->
+  <Manager pathname="" />
+
+  <Resource name="jdbc/syncopeDataSource" auth="Container" type="javax.sql.DataSource"
+          factory="org.apache.tomcat.jdbc.pool.DataSourceFactory" testWhileIdle="true"
+          testOnBorrow="true" testOnReturn="true" validationQuery="SELECT 1" validationInterval="30000"
+          maxActive="100" minIdle="2" maxWait="10000" initialSize="2" removeAbandonedTimeout="20000"
+          removeAbandoned="true" logAbandoned="true" suspectTimeout="20000"
+          timeBetweenEvictionRunsMillis="5000" minEvictableIdleTimeMillis="5000"
+          jdbcInterceptors="org.apache.tomcat.jdbc.pool.interceptor.ConnectionState;org.apache.tomcat.jdbc.pool.interceptor.StatementFinalizer"
+          username="$user" password="$password" driverClassName="org.postgresql.Driver"
+          url="jdbc:postgresql://$host:5432/$database"/>
+
+</Context>
+
+EOF
+
+	cd $TOMCAT_HOME/lib
+	wget_output=$(wget -qN http://jdbc.postgresql.org/download/postgresql-9.3-1100.jdbc3.jar)
+	if [ $? -ne 0 ]; then
+	    juju-log "Cannot download PostgreSQL JDBC driver: aborting"
+	    exit $?
+	fi
+    fi
+fi
+shopt -u nocasematch
+
+# 2. Complete Syncope project configuration and rebuild
+
+cat > $BASE_SRC/$PROJECT_NAME/core/src/main/resources/persistence.properties <<EOF
+jpa.driverClassName=org.postgresql.Driver
+jpa.url=jdbc:postgresql://$host:5432/$database
+jpa.username=$user
+jpa.password=$password
+jpa.dialect=org.apache.openjpa.jdbc.sql.PostgresDictionary
+quartz.jobstore=org.quartz.impl.jdbcjobstore.PostgreSQLDelegate
+quartz.sql=tables_postgres.sql
+logback.sql=postgresql.sql
+
+EOF
+
+sed -i "s/8080/$HTTP_PORT/" $BASE_SRC/$PROJECT_NAME/console/src/main/resources/configuration.properties
+
+sed 's/<!--<resource-ref>/<resource-ref>/' $BASE_SRC/$PROJECT_NAME/core/src/main/webapp/WEB-INF/web.xml | sed 's/<\/resource-ref>-->/<\/resource-ref>/' > /tmp/web.xml
+mv /tmp/web.xml $BASE_SRC/$PROJECT_NAME/core/src/main/webapp/WEB-INF/web.xml
+
+juju-log "Apache Syncope persistence successfully configured"
+
+cd $BASE_SRC/$PROJECT_NAME
+$M2_HOME/bin/mvn clean package -Dbundles.directory=$SYNCOPE_BUNDLES_DIR -Dlog.directory=$SYNCOPE_LOG_DIR
+juju-log "Apache Syncope overlay project successfully rebuilt"
+
+# 3. Deploy and restart the JEE container
+
+/etc/init.d/apache-tomcat stop
+
+rm -rf $TOMCAT_HOME/webapps/syncope*
+cp core/target/syncope.war $TOMCAT_HOME/webapps
+cp console/target/syncope-console.war $TOMCAT_HOME/webapps
+
+/etc/init.d/apache-tomcat start
