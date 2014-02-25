@@ -19,24 +19,28 @@ $ juju deploy postgresql
 $ juju add-relation syncope postgresql:db
 ```
 
-or
-
-```
-$ juju deploy mysql
-$ juju add-relation syncope mysql
-```
-
 and finally
 
 ```
 $ juju expose syncope
 ```
 
+This will [generate a new Apache Syncope project](https://cwiki.apache.org/confluence/display/SYNCOPE/Create+a+new+Syncope+project#CreateanewSyncopeproject-Createnewproject) from latest Maven archetype under `/usr/local/src/syncope-charm`, setup the JEE container and the DBMS, build and deploy Apache Syncope `core` and `console` and finally start up the JEE container.
+
 ## Scale out Usage
+
+To be implemented.
 
 # Configuration
 
+Several configuration options are available, including:
+ * the port to which the HTTP service will be listening (default: `80`)
+ * the bundles directory (default: `/opt/syncope/bundles`)
+ * the log directory (default: `/opt/syncope/log`)
+
 # Contact Information
+
+Please send an e-mail to syncope@tirasa.net
 
 ## Apache Syncope
 

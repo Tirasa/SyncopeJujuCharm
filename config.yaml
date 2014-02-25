@@ -1,8 +1,8 @@
 options:
-  jee-container:
-    type: string
-    default: "tomcat"
-    description: "Choose the JEE container; valid values: tomcat, glassfish, jboss"
+  #jee-container:
+  #  type: string
+  #  default: "tomcat"
+  #  description: "Choose the JEE container; valid values: tomcat, glassfish, jboss"
   http-port:
     type: int
     default: 80
