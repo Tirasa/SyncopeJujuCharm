@@ -45,12 +45,8 @@ else
 
 EOF
 
-	cd $TOMCAT_HOME/lib
-	wget_output=$(wget -qN http://jdbc.postgresql.org/download/postgresql-9.3-1100.jdbc3.jar)
-	if [ $? -ne 0 ]; then
-	    juju-log "Cannot download PostgreSQL JDBC driver: aborting"
-	    exit $?
-	fi
+	apt-get install -y  libpostgresql-jdbc-java
+	cp /usr/share/java/postgresql-jdbc3-9.1.jar $TOMCAT_HOME/lib/
     fi
 fi
 shopt -u nocasematch
