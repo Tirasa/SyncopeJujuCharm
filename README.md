@@ -6,10 +6,10 @@ This charm provides [Apache Syncope](http://syncope.apache.org).
 
 # Usage
 
-Step by step instructions on using the charm:
+Step by step instructions on using the charm (minimum 2GB RAM required):
 
 ```
-$ juju deploy syncope
+$ juju deploy syncope --constraints mem=2G
 ```
 
 then
