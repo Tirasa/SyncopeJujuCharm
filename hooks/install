@@ -15,7 +15,7 @@ if [ ! -d "$BASE_SRC/$PROJECT_NAME" ]; then
 	-DarchetypeGroupId=org.apache.syncope \
 	-DarchetypeArtifactId=syncope-archetype \
 	-DarchetypeRepository=http://repo1.maven.org/maven2 \
-	-DarchetypeVersion=1.1.5 \
+	-DarchetypeVersion=1.1.6 \
 	-DgroupId=net.tirasa.syncope \
 	-DartifactId=$PROJECT_NAME \
 	-Dversion=1.0-SNAPSHOT \
