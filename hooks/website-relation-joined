@@ -1,0 +1,6 @@
+#!/bin/bash
+set -eu
+source inc/common
+
+# Bypass the loadbalancer for $engine and instead just hit the unit
+relation-set port=$HTTP_PORT hostname=`unit-get private-address`
