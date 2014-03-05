@@ -97,39 +97,8 @@ JAVA_OPTS="-Djava.awt.headless=true -Dfile.encoding=UTF-8
 
 EOF
 	    chmod 755 $TOMCAT_HOME/bin/setenv.sh
-	    
-	    cat > /etc/init.d/apache-tomcat <<EOF
-### BEGIN INIT INFO
-# Provides:          apache-tomcat
-# Required-Start:    \$local_fs \$remote_fs \$network
-# Required-Stop:     \$local_fs \$remote_fs \$network
-# Should-Start:      \$named
-# Should-Stop:       \$named
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
-# Short-Description: Start Tomcat.
-# Description:       Start the Tomcat servlet engine.
-### END INIT INFO
 
-case \$1 in
-
-start)
-  sh $TOMCAT_HOME/bin/startup.sh
-  ;;
-
-stop)
-  sh $TOMCAT_HOME/bin/shutdown.sh
-  ;;
-
-restart)
-  sh $TOMCAT_HOME/bin/shutdown.sh
-  sh $TOMCAT_HOME/bin/startup.sh
-  ;;
-esac
-
-exit
-
-EOF
+	    sed 's,'\$TOMCAT_HOME','"$TOMCAT_HOME"',' $CHARM_DIR/files/charm/etc_init.d_apache-tomcat > /etc/init.d/apache-tomcat
 	    chmod 755 /etc/init.d/apache-tomcat
 	    update-rc.d apache-tomcat defaults
 	else
