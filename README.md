@@ -27,6 +27,17 @@ $ juju expose syncope
 
 This will [generate a new Apache Syncope project](https://cwiki.apache.org/confluence/display/SYNCOPE/Create+a+new+Syncope+project#CreateanewSyncopeproject-Createnewproject) from latest Maven archetype under `/usr/local/src/syncope-charm`, setup the JEE container and the DBMS, build and deploy Apache Syncope `core` and `console` and finally start up the JEE container.
 
+At this point the Apache Syncope admin console is available at 
+
+http://your.host:yourport/syncope-console/ 
+
+where 
+
+ * `your.host` is the IP address or hostname where the charm is reachable
+ * `yourport` is the TCP port configured (defaults to 80)
+
+You can reach it anyway at http://your.host:yourport/
+
 ## Scale out Usage
 
 To be implemented.
