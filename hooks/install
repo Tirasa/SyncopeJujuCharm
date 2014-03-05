@@ -2,7 +2,7 @@
 set -eu
 source inc/common
 
-# 1. Generate and build Maven overlay project (if not already available)
+# Generate and build Maven overlay project (if not already available)
 
 add-apt-repository -y ppa:natecarlson/maven3
 apt-get update
@@ -29,84 +29,3 @@ if [ ! -d "$BASE_SRC/$PROJECT_NAME" ]; then
 else
     juju-log "Apache Syncope overlay project already present"
 fi
-
-# 2. Download the configured JEE container and do some basic setup
-
-shopt -s nocasematch
-if [ "$JEE_CONTAINER" == "glassfish" ]; then 
-    juju-log "Go for Glassfish"
-else
-    if [ "$JEE_CONTAINER" == "jboss" ]; then
-	juju-log "Go for JBoss"
-    else
-	TOMCAT_VERSION="7.0.52"
-	juju-log "Go for Tomcat $TOMCAT_VERSION under $TOMCAT_HOME"
-	
-	if [ ! -d $TOMCAT_HOME ]; then
-	    juju-log "Downloading Tomcat $TOMCAT_VERSION..."
-
-	    cd /tmp
-	    wget_output=$(wget -qN https://archive.apache.org/dist/tomcat/tomcat-7/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz)
-	    if [ $? -ne 0 ]; then
-		juju-log "Cannot download Tomcat $TOMCAT_VERSION: aborting"
-		exit $?
-	    fi
-	    wget_output=$(wget -qN https://archive.apache.org/dist/tomcat/tomcat-7/KEYS)
-	    if [ $? -ne 0 ]; then
-		juju-log "Cannot download Tomcat KEYS: aborting"
-		exit $?
-	    fi
-	    wget_output=$(wget -qN https://archive.apache.org/dist/tomcat/tomcat-7/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz.asc)
-	    if [ $? -ne 0 ]; then
-		juju-log "Cannot download Tomcat $TOMCAT_VERSION ASC: aborting"
-		exit $?
-	    fi
-	    wget_output=$(wget -qN https://archive.apache.org/dist/tomcat/tomcat-7/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz.md5)
-	    if [ $? -ne 0 ]; then
-		juju-log "Cannot download Tomcat $TOMCAT_VERSION MD5: aborting"
-		exit $?
-	    fi
-
-	    # Verify the downloaded archive
-	    md5sum --status -c apache-tomcat-$TOMCAT_VERSION.tar.gz.md5
-	    if [ $? -ne 0 ]; then
-		juju-log "$TOMCAT_VERSION MD5 verification failed: aborting"
-		exit $?
-	    fi
-	    gpg_output=$(gpg --import KEYS)
-	    gpg_output=$(gpg --verify apache-tomcat-$TOMCAT_VERSION.tar.gz.asc)
-	    if [ $? -ne 0 ]; then
-		juju-log "$TOMCAT_VERSION ASC verification failed: aborting"
-		exit $?
-	    fi
-	    
-	    # Install Tomcat and perform basic configuration
-	    cd /opt
-	    tar xvzf /tmp/apache-tomcat-$TOMCAT_VERSION.tar.gz
-	    ln -s apache-tomcat-$TOMCAT_VERSION apache-tomcat
-
-	    cp $TOMCAT_HOME/conf/server.xml $TOMCAT_HOME/conf/server.xml.orig
-	    sed -i "s/8080/$HTTP_PORT/g" $TOMCAT_HOME/conf/server.xml
-
-	    cat > $TOMCAT_HOME/bin/setenv.sh <<EOF
-JAVA_OPTS="-Djava.awt.headless=true -Dfile.encoding=UTF-8 
--server -Xms1536m -Xmx1536m
--XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC
--XX:NewSize=256m -XX:MaxNewSize=256m -XX:PermSize=256m 
--XX:MaxPermSize=512m -XX:+DisableExplicitGC"
-
-EOF
-	    chmod 755 $TOMCAT_HOME/bin/setenv.sh
-
-	    sed 's,'\$TOMCAT_HOME','"$TOMCAT_HOME"',' $CHARM_DIR/files/charm/etc_init.d_apache-tomcat > /etc/init.d/apache-tomcat
-	    chmod 755 /etc/init.d/apache-tomcat
-	    update-rc.d apache-tomcat defaults
-	else
-	    juju-log "Tomcat already set up under $TOMCAT_HOME"
-	fi
-    fi
-fi
-shopt -u nocasematch
-
-# Make it publicly visible, once the syncope service is exposed
-open-port $HTTP_PORT/tcp

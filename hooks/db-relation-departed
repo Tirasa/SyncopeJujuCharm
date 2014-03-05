@@ -1,0 +1,8 @@
+#!/bin/bash
+set -eu
+source inc/common
+
+juju-log "Apache Syncope db removed"
+
+/etc/init.d/apache-tomcat stop
+
