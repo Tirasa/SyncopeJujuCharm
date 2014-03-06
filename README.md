@@ -38,6 +38,15 @@ where
 
 You can reach it anyway at http://your.host:yourport/
 
+## Destroying the service
+
+In case you need to destroy the `syncope` service, be sure to first remove the database relation:
+
+```
+$ juju remove-relation syncope postgresql:db
+$ juju destroy-service syncope
+```
+
 ## Scale out Usage
 
 To be implemented.
