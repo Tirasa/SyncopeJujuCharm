@@ -1,0 +1,5 @@
+#!/bin/bash
+set -eu
+source inc/common
+
+/etc/init.d/apache-tomcat stop
