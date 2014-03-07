@@ -1,4 +1,4 @@
-envExport: 
+syncopePostgreSQL: 
   services: 
     syncope: 
       charm: "cs:precise/syncope-3"
