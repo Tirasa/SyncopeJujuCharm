@@ -1,6 +1,0 @@
-#!/bin/bash
-set -eu
-source inc/common
-
-hooks/install
-hooks/config-changed
